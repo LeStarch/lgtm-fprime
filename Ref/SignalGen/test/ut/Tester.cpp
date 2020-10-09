@@ -24,13 +24,8 @@ namespace Ref {
 
   Tester ::
     Tester(void) : 
-#if FW_OBJECT_NAMES == 1
       SignalGenGTestBase("Tester", MAX_HISTORY_SIZE),
       component("SignalGen")
-#else
-      SignalGenGTestBase(MAX_HISTORY_SIZE),
-      component()
-#endif
   {
     this->initComponents();
     this->connectPorts();
@@ -49,12 +44,12 @@ namespace Ref {
   void Tester ::
     test_start(void) 
   {
-       ASSERT_TLM_SignalGen_Output_SIZE(0);
+       ASSERT_TLM_Output_SIZE(0);
        sendCmd_SignalGen_Toggle(0, 0);
        component.doDispatch();
        invoke_to_schedIn(0, 0);
        component.doDispatch();
-       ASSERT_TLM_SignalGen_Output_SIZE(1);
+       ASSERT_TLM_Output_SIZE(1);
   }
 
   // ----------------------------------------------------------------------

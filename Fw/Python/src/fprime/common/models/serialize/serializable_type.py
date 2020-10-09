@@ -4,6 +4,7 @@ Created on Dec 18, 2014
 @author: tcanham
 
 """
+import copy
 
 from .type_base import BaseType, ValueType
 from .type_exceptions import NotInitializedException, TypeMismatchException
@@ -19,8 +20,8 @@ class SerializableType(ValueType):
     @param param: typename = "SomeTypeName" string
     To preserve member order, the member argument is a list of members and their types:
     @param param: mem_list = [ ("member",<ref to BaseType>, format string, description), ... ]
-                  OR mem_list = [ ("member",<ref to BaseType>, format string), ... ].
-                  The member descriptions can be None
+    OR mem_list = [ ("member",<ref to BaseType>, format string), ... ].
+    The member descriptions can be None
     """
 
     def __init__(self, typename, mem_list=None):
@@ -91,17 +92,20 @@ class SerializableType(ValueType):
 
     def deserialize(self, data, offset):
         """ Deserialize the values of each of the members """
-        members = []
-        for _, member_val, _, _ in self.mem_list:
-            member_val.deserialize(data, offset)
-            members.append(member_val.val)
+        new_member_list = []
+        for entry1, member_val, entry3, entry4 in self.mem_list:
+            cloned = copy.copy(member_val)
+            cloned.deserialize(data, offset)
+            new_member_list.append((entry1, cloned, entry3, entry4))
             offset += member_val.getSize()
+        self.mem_list = new_member_list
 
     @property
     def val(self) -> dict:
         """
         The .val property typically returns the python-native type. This the python native type closes to a serializable
         without generating full classes would be a dictionary (anonymous object). This returns such an object.
+
         :return dictionary of member names to python values of member keys
         """
         return {
@@ -115,6 +119,7 @@ class SerializableType(ValueType):
         The .val property typically returns the python-native type. This the python native type closes to a serializable
         without generating full classes would be a dictionary (anonymous object). This takes such an object and sets the
         member val list from it.
+
         :param val: dictionary containing python types to key names. This
         """
         values_list = [val[name] for name, _, _, _ in self.mem_list]
@@ -125,7 +130,7 @@ class SerializableType(ValueType):
 
     def getSize(self):
         """ The size of a struct is the size of all the members """
-        return sum([member.getSize() for member in self.mem_list])
+        return sum([mem_type.getSize() for _, mem_type, _, _ in self.mem_list])
 
     def to_jsonable(self):
         """
